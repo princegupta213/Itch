@@ -2,6 +2,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import uvicorn
+from pathlib import Path
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 app = FastAPI(title="Fix My Itch AI", description="AI-powered problem-solving platform", version="1.0.0")
 app.add_middleware(
@@ -14,6 +18,8 @@ app.add_middleware(
 
 problems = []
 solutions = []
+static_dir = Path(__file__).resolve().parent / "static"
+index_path = static_dir / "index.html"
 
 
 @app.get("/health")
@@ -23,6 +29,9 @@ async def health():
 
 @app.get("/")
 async def root():
+    # If frontend is bundled into the container, serve it at `/`.
+    if index_path.exists():
+        return FileResponse(str(index_path))
     return {"message": "Welcome to Fix My Itch AI", "version": "1.0.0", "docs": "/docs"}
 
 
@@ -80,6 +89,11 @@ async def generate_solution(title: str, description: str):
 async def metrics():
     return {"total_problems": len(problems), "total_solutions": len(solutions)}
 
+
+if static_dir.exists():
+    # Serve the built SPA assets (js/css) from `backend/static`.
+    # API routes are defined before this mount, so `/api/...` continues to work.
+    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="frontend")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

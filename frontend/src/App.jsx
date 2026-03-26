@@ -9,7 +9,9 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [apiStatus, setApiStatus] = useState("checking")
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
+  // If VITE_API_URL is not set, call the backend on the same origin (works for single-container deploys).
+  const rawApiUrl = import.meta.env.VITE_API_URL || ""
+  const API_URL = rawApiUrl.replace(/\/$/, "")
 
   useEffect(() => {
     checkAPI()
